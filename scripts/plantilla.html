@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --azul-oscuro:#12233f;
+    --azul:#1f4e8c;
+    --azul-claro:#eef3fb;
+    --borde:#d7e0ee;
+    --texto:#1b2430;
+    --gris:#65707d;
+    --verde-bg:#e4f6ea; --verde-tx:#1c7a3d;
+    --ambar-bg:#fdf1de; --ambar-tx:#a45c00;
+    --azulbadge-bg:#e5edfc; --azulbadge-tx:#1f4e8c;
+    --gris-bg:#eef0f2; --gris-tx:#3a4552;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:#ffffff; color:var(--texto); }
+  .wrap{ width:920px; padding:28px; }
+  .brand{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .brand-left{display:flex; align-items:center; gap:10px;}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--azul);}
+  .brand-name{font-size:13px; font-weight:700; letter-spacing:.04em; color:var(--gris); text-transform:uppercase;}
+  .fecha{font-size:12px; color:var(--gris);}
+  h1{ font-size:20px; margin:0 0 18px 0; color:var(--azul-oscuro); font-weight:800; }
+  table{ width:100%; border-collapse:collapse; border:1px solid var(--borde); border-radius:10px; overflow:hidden; }
+  thead th{ background:var(--azul-oscuro); color:#fff; text-align:left; font-size:12px; letter-spacing:.03em; text-transform:uppercase; padding:11px 14px; font-weight:700; }
+  tbody td{ padding:11px 14px; font-size:13.5px; border-top:1px solid var(--borde); white-space:nowrap; }
+  tbody tr:nth-child(even){background:var(--azul-claro);}
+  .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+  .b-vigente{background:var(--verde-bg); color:var(--verde-tx);}
+  .b-proximo{background:var(--ambar-bg); color:var(--ambar-tx);}
+  .b-nueva{background:var(--azulbadge-bg); color:var(--azulbadge-tx);}
+  .b-otro{background:var(--gris-bg); color:var(--gris-tx);}
+</style>
+</head>
+<body>
+<div class="wrap" id="card">
+  <div class="brand">
+    <div class="brand-left">
+      <div class="dot"></div>
+      <div class="brand-name">Blue Home</div>
+    </div>
+    <div class="fecha">__FECHA__</div>
+  </div>
+  <h1>Promociones Supercomisión Vigentes</h1>
+  <table>
+    <thead>
+      <tr><th>Edificio</th><th>Tipología</th><th>Tipo Promoción</th><th>Fecha Vigencia</th><th>Estatus</th></tr>
+    </thead>
+    <tbody>
+__FILAS__
+    </tbody>
+  </table>
+</div>
+</body>
+</html>
