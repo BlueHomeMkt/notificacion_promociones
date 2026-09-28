@@ -1,0 +1,97 @@
+name: Enviar promociones Supercomisión
+
+on:
+  # Lo dispara Power Automate con la acción de GitHub "Crear un evento de distribución de repositorio"
+  repository_dispatch:
+    types: [promos_supercomision]
+  # Ejecución manual desde la pestaña Actions (usa datos/ejemplo.json)
+  workflow_dispatch:
+    inputs:
+      enviar_whatsapp:
+        description: "¿Enviar también el WhatsApp?"
+        type: choice
+        options: ["no", "si"]
+        default: "no"
+
+permissions:
+  contents: write   # guardar la imagen en el repositorio
+  pages: write      # publicar en GitHub Pages
+  id-token: write   # requerido por GitHub Pages
+
+concurrency:
+  group: enviar-promociones
+  cancel-in-progress: false
+
+jobs:
+  generar-y-enviar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+
+      - name: Preparar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Guardar datos recibidos
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            printf '%s' "$PAYLOAD" > "$RUNNER_TEMP/datos.json"
+          else
+            cp datos/ejemplo.json "$RUNNER_TEMP/datos.json"
+          fi
+
+      - name: Generar imagen
+        id: imagen
+        run: python scripts/generar_imagen.py "$RUNNER_TEMP/datos.json"
+
+      - name: Guardar imagen en el repositorio
+        if: steps.imagen.outputs.hay_filas == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add publico/img
+          git commit -m "Promociones Supercomisión ${{ steps.imagen.outputs.fecha }}"
+          git pull --rebase
+          git push
+
+      - name: Configurar GitHub Pages
+        if: steps.imagen.outputs.hay_filas == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Preparar publicación
+        if: steps.imagen.outputs.hay_filas == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: publico
+
+      - name: Publicar en GitHub Pages
+        if: steps.imagen.outputs.hay_filas == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Enviar WhatsApp
+        if: >-
+          steps.imagen.outputs.hay_filas == 'true' &&
+          (github.event_name == 'repository_dispatch' || inputs.enviar_whatsapp == 'si')
+        env:
+          ARCHIVO: ${{ steps.imagen.outputs.archivo }}
+          FECHA: ${{ steps.imagen.outputs.fecha }}
+          URL_IMAGENES: ${{ steps.deployment.outputs.page_url }}img
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
+          WHATSAPP_DESTINOS: ${{ secrets.WHATSAPP_DESTINOS }}
+        run: python scripts/enviar_whatsapp.py
