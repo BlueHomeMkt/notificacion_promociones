@@ -1,4 +1,5 @@
 name: Enviar promociones Supercomisión
+# Genera y envía dos imágenes: Supercomisión y Corretaje y Arriendo
 
 on:
   # Lo dispara Power Automate con la acción de GitHub "Crear un evento de distribución de repositorio"
@@ -57,31 +58,31 @@ jobs:
         run: python scripts/generar_imagen.py "$RUNNER_TEMP/datos.json"
 
       - name: Guardar imagen en el repositorio
-        if: steps.imagen.outputs.hay_filas == 'true'
+        if: steps.imagen.outputs.hay_alguna == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add publico/img
-          git commit -m "Promociones Supercomisión ${{ steps.imagen.outputs.fecha }}"
+          git commit -m "Promociones ${{ steps.imagen.outputs.fecha }}"
           git pull --rebase
           git push
 
       - name: Configurar GitHub Pages
-        if: steps.imagen.outputs.hay_filas == 'true'
+        if: steps.imagen.outputs.hay_alguna == 'true'
         uses: actions/configure-pages@v5
 
       - name: Preparar publicación
-        if: steps.imagen.outputs.hay_filas == 'true'
+        if: steps.imagen.outputs.hay_alguna == 'true'
         uses: actions/upload-pages-artifact@v4
         with:
           path: publico
 
       - name: Publicar en GitHub Pages
-        if: steps.imagen.outputs.hay_filas == 'true'
+        if: steps.imagen.outputs.hay_alguna == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Enviar WhatsApp
+      - name: Enviar WhatsApp Supercomisión
         if: >-
           steps.imagen.outputs.hay_filas == 'true' &&
           (github.event_name == 'repository_dispatch' || inputs.enviar_whatsapp == 'si')
@@ -95,3 +96,27 @@ jobs:
           TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
           WHATSAPP_DESTINOS: ${{ secrets.WHATSAPP_DESTINOS }}
         run: python scripts/enviar_whatsapp.py
+
+      # Segundo mensaje. Corre aunque el de Supercomisión haya fallado,
+      # siempre que la imagen se haya publicado bien.
+      - name: Enviar WhatsApp Corretaje y Arriendo
+        if: >-
+          !cancelled() &&
+          steps.deployment.outcome == 'success' &&
+          steps.imagen.outputs.hay_filas_corretaje == 'true' &&
+          (github.event_name == 'repository_dispatch' || inputs.enviar_whatsapp == 'si')
+        env:
+          ARCHIVO: ${{ steps.imagen.outputs.archivo_corretaje }}
+          FECHA: ${{ steps.imagen.outputs.fecha }}
+          URL_IMAGENES: ${{ steps.deployment.outputs.page_url }}img
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID_CORRETAJE }}
+          WHATSAPP_DESTINOS: ${{ secrets.WHATSAPP_DESTINOS }}
+        run: |
+          if [ -z "$TWILIO_CONTENT_SID" ]; then
+            echo "::warning::Falta el Secret TWILIO_CONTENT_SID_CORRETAJE (plantilla de Corretaje y Arriendo). La imagen se publicó, pero no se envió este WhatsApp."
+            exit 0
+          fi
+          python scripts/enviar_whatsapp.py
