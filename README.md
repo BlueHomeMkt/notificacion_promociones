@@ -1,6 +1,6 @@
-# Notificación de promociones Supercomisión
+# Notificación de promociones (Supercomisión + Corretaje y Arriendo)
 
-Cada vez que el flujo de Power Automate "Enviar promos diario" publica la tabla de Supercomisión en Teams, también le envía los datos a este repositorio. GitHub Actions genera la imagen con el diseño aprobado, la publica en GitHub Pages y la envía por WhatsApp con la plantilla aprobada en Twilio.
+El flujo de Power Automate "Envío de promos freelances" le envía a este repositorio las promociones de Supercomisión y las de Corretaje y Arriendo vigentes. GitHub Actions genera **una imagen por cada tabla** con el diseño aprobado, las publica en GitHub Pages y las envía por WhatsApp en **dos mensajes**: primero Supercomisión y después Corretaje y Arriendo.
 
 ```
 Power Automate ──► GitHub Actions ──► imagen PNG ──► GitHub Pages ──► Twilio ──► WhatsApp
@@ -30,7 +30,7 @@ En el repositorio, entra a **Add file → Upload files**, arrastra todo el conte
 
 ### 3. Cargar los Secrets
 
-**Settings → Secrets and variables → Actions → New repository secret**. Crea estos cinco:
+**Settings → Secrets and variables → Actions → New repository secret**. Crea estos seis:
 
 | Nombre | Valor |
 |---|---|
@@ -38,6 +38,7 @@ En el repositorio, entra a **Add file → Upload files**, arrastra todo el conte
 | `TWILIO_AUTH_TOKEN` | Un Auth Token **nuevo** (el anterior quedó escrito en un chat) |
 | `TWILIO_WHATSAPP_FROM` | El número de WhatsApp de Twilio, ej. `+56912345678` |
 | `TWILIO_CONTENT_SID` | El SID de la plantilla (empieza con `HX`). Si aún no la tienes, deja `pendiente` y lo cambias después |
+| `TWILIO_CONTENT_SID_CORRETAJE` | El SID de la plantilla de Corretaje y Arriendo (empieza con `HX`). Mientras no exista, no lo crees: la imagen se publica igual y solo se salta ese WhatsApp |
 | `WHATSAPP_DESTINOS` | Los números que reciben el mensaje, separados por coma, ej. `+56911111111,+56922222222` |
 
 Los Secrets no los puede ver nadie, ni siquiera en los registros del workflow.
@@ -56,6 +57,11 @@ https://bluehomemkt.github.io/notificacion_promociones/img/promociones_supercomi
 
 Cuando Meta la apruebe, copia el Content SID (`HX...`) en el Secret `TWILIO_CONTENT_SID`.
 
+**Segunda plantilla (Corretaje y Arriendo):** crea otra plantilla igual, con un texto propio para estas promociones y la misma Media URL `https://bluehomemkt.github.io/notificacion_promociones/img/{{2}}`.
+- **Valores de ejemplo:** `{{1}}` = `28-09-2026` · `{{2}}` = `promociones_corretaje_arriendo_2026-09-28.png`
+
+Cuando Meta la apruebe, copia su Content SID en el Secret `TWILIO_CONTENT_SID_CORRETAJE`.
+
 ### 6. Prueba de envío
 
 Deja temporalmente solo tu número en `WHATSAPP_DESTINOS` y corre **Run workflow** con "¿Enviar también el WhatsApp?" en **si**. Te debería llegar la imagen con los datos de ejemplo.
@@ -64,11 +70,13 @@ Deja temporalmente solo tu número en `WHATSAPP_DESTINOS` y corre **Run workflow
 
 En el flujo "Enviar promos diario", en la rama de Supercomisión, agrega una **rama paralela** junto a los pasos "Publicar mensaje en chat Supercomisión…". Así, si esta parte falla, los mensajes de Teams siguen llegando.
 
-1. Acción **Redactar** (renómbrala "Datos para GitHub"). En Entradas escribe `{"filas": }` y, después de los dos puntos, inserta desde el contenido dinámico la **Salida** de "Limpiar columnas Supercomisión":
+1. Acción **Redactar** (renómbrala "Datos para GitHub"). En Entradas arma este JSON, insertando desde el contenido dinámico la **Salida** de cada "Limpiar columnas…":
 
    ```
-   {"filas": [Salida de Limpiar columnas Supercomisión]}
+   {"filas": [Salida de Limpiar columnas Supercomisión], "filas_corretaje": [Salida de Limpiar columnas Corretaje]}
    ```
+
+   `filas_corretaje` es opcional: si no viene o viene vacía, solo se envía la imagen de Supercomisión (y al revés).
 
 2. Acción de GitHub **Crear un evento de distribución de repositorio**:
    - Propietario: `BlueHomeMkt`
@@ -82,11 +90,11 @@ En el flujo "Enviar promos diario", en la rama de Supercomisión, agrega una **r
 
 ## Qué pasa cada lunes y jueves
 
-1. Power Automate publica la tabla en Teams (como siempre) y envía los datos a GitHub.
-2. GitHub Actions genera la imagen con la fecha y hora de Chile, la guarda en `publico/img/` y la publica.
-3. Espera a que la imagen esté disponible y envía la plantilla de WhatsApp a cada número de `WHATSAPP_DESTINOS`.
+1. Power Automate envía a GitHub las dos tablas de promociones.
+2. GitHub Actions genera una imagen por tabla con la fecha y hora de Chile, las guarda en `publico/img/` y las publica.
+3. Envía el WhatsApp de Supercomisión y luego el de Corretaje y Arriendo a cada número de `WHATSAPP_DESTINOS`. Si el primero falla, el segundo se intenta igual.
 
-Si ese día no hay promociones, no se genera imagen ni se envía nada.
+Si una tabla viene vacía, esa imagen no se genera ni se envía. Si las dos vienen vacías, no se envía nada.
 
 ## Si algo falla
 
@@ -96,7 +104,8 @@ Si ese día no hay promociones, no se genera imagen ni se envía nada.
 ## Mantenimiento
 
 - **Cambiar destinatarios:** edita el Secret `WHATSAPP_DESTINOS`. Cada destinatario debe haber aceptado recibir mensajes de Blue Home por WhatsApp (política de Meta).
-- **Cambiar el diseño:** edita `scripts/plantilla.html`.
+- **Cambiar el diseño:** edita `scripts/plantilla.html` (vale para las dos imágenes).
+- **Cambiar los títulos de las imágenes:** edita la lista `TABLAS` al inicio de `scripts/generar_imagen.py`.
 - **Si cambias de Auth Token en Twilio:** actualiza el Secret `TWILIO_AUTH_TOKEN`.
 - **Continuidad:** la organización BlueHomeMkt debe tener al menos dos Owners. Si quien conectó GitHub en Power Automate deja la empresa, otra persona debe volver a conectarlo con su cuenta.
 

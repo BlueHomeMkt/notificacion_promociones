@@ -10,5 +10,14 @@
     {"Edificio": "Tocornal 661", "Tipología": "1D1B", "Tipo Promoción": "Supercomisión 75%", "Fecha Vigencia": "05/10/2026", "Estatus": "Próximo Término"},
     {"Edificio": "José Ureta 180", "Tipología": "1D1B", "Tipo Promoción": "Supercomisión 75%", "Fecha Vigencia": "05/10/2026", "Estatus": "Próximo Término"},
     {"Edificio": "Inglaterra 59", "Tipología": "1D1B", "Tipo Promoción": "Supercomisión 75%", "Fecha Vigencia": "05/10/2026", "Estatus": "Próximo Término"}
+  ],
+  "filas_corretaje": [
+    {"Edificio": "Santa Rosa 237", "Tipología": "2D2B(3c)", "Tipo Promoción": "Sin comisión de corretaje", "Fecha Vigencia": "05/10/2026", "Estatus": "Próximo Término"},
+    {"Edificio": "Inglaterra 59", "Tipología": "1D1B", "Tipo Promoción": "Sin comisión de corretaje", "Fecha Vigencia": "08/10/2026", "Estatus": "Vigente"},
+    {"Edificio": "San Isidro", "Tipología": "1D1B", "Tipo Promoción": "Sin comisión de corretaje", "Fecha Vigencia": "08/10/2026", "Estatus": "Vigente"},
+    {"Edificio": "Santa Rosa 237", "Tipología": "2D2B(4c)", "Tipo Promoción": "Sin comisión de corretaje", "Fecha Vigencia": "08/10/2026", "Estatus": "Vigente"},
+    {"Edificio": "Buzeta 4027", "Tipología": "2D1B(3c)", "Tipo Promoción": "Sin comisión de corretaje", "Fecha Vigencia": "08/10/2026", "Estatus": "Vigente"},
+    {"Edificio": "Tocornal 661", "Tipología": "1D1B", "Tipo Promoción": "Arriendo Octubre gratis", "Fecha Vigencia": "08/10/2026", "Estatus": "Nueva"},
+    {"Edificio": "Buzeta 4027", "Tipología": "2D2B(4c)", "Tipo Promoción": "Arriendo Octubre gratis", "Fecha Vigencia": "08/10/2026", "Estatus": "Nueva"}
   ]
 }
