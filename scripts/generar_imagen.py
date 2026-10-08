@@ -16,6 +16,11 @@ Cada lista también puede venir como texto JSON, y cualquiera de las dos puede
 faltar o venir vacía (esa imagen simplemente no se genera). Los nombres de
 columna se reconocen aunque cambien mayúsculas, tildes o guiones bajos.
 
+En la imagen de Corretaje y Arriendo, los textos de arriendo gratis se
+reescriben con el mes del envío (hora de Chile). Por ejemplo, en octubre:
+    "Arriendo primer mes gratis"       -> "Arriendo Octubre gratis"
+    "Arriendo primeros 2 meses gratis" -> "Arriendo Octubre y Noviembre gratis"
+
 Guarda los PNG en publico/img/ y, si corre en GitHub Actions, deja en la salida
 del paso:
     hay_filas, archivo                       -> Supercomisión
@@ -26,6 +31,7 @@ del paso:
 import html
 import json
 import os
+import re
 import sys
 import unicodedata
 from datetime import datetime
@@ -42,20 +48,33 @@ ZONA_CHILE = ZoneInfo("America/Santiago")
 #   titulo: título que aparece en la imagen
 #   prefijo: inicio del nombre del PNG
 #   sufijo: se agrega a las salidas del paso (hay_filas{sufijo}, archivo{sufijo})
+#   meses_arriendo: True = reescribe "Arriendo primer mes gratis" con el mes del envío
 TABLAS = [
     {
         "clave": "filas",
         "titulo": "Promociones Supercomisión Vigentes",
         "prefijo": "promociones_supercomision",
         "sufijo": "",
+        "meses_arriendo": False,
     },
     {
         "clave": "filas_corretaje",
         "titulo": "Promociones Corretaje y Arriendo Vigentes",
         "prefijo": "promociones_corretaje_arriendo",
         "sufijo": "_corretaje",
+        "meses_arriendo": True,
     },
 ]
+
+MESES = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+]
+
+# Textos de arriendo gratis que se reescriben con el mes del envío.
+# No importan mayúsculas ni espacios de más; el resto de la celda se mantiene.
+ARRIENDO_DOS_MESES = re.compile(r"\barriendo\s+primeros\s+(?:2|dos)\s+meses\s+gratis\b", re.IGNORECASE)
+ARRIENDO_UN_MES = re.compile(r"\barriendo\s+primer\s+mes\s+gratis\b", re.IGNORECASE)
 
 # (clave normalizada, nombre que se muestra) en el orden de la tabla
 COLUMNAS = [
@@ -103,6 +122,18 @@ def limpiar_filas(lista, clave):
             raise ValueError(f'Faltan las columnas {faltantes} en una fila de "{clave}": {item}')
         filas.append([por_clave[c] for c, _ in COLUMNAS])
     return filas
+
+
+def nombre_mes(fecha, meses_despues=0):
+    """Nombre del mes de la fecha, o de N meses después (diciembre + 1 -> Enero)."""
+    return MESES[(fecha.month - 1 + meses_despues) % 12]
+
+
+def poner_meses_arriendo(texto, fecha):
+    """'Arriendo primer mes gratis' -> 'Arriendo Octubre gratis' (si fecha es de octubre)."""
+    actual, siguiente = nombre_mes(fecha), nombre_mes(fecha, 1)
+    texto = ARRIENDO_DOS_MESES.sub(f"Arriendo {actual} y {siguiente} gratis", texto)
+    return ARRIENDO_UN_MES.sub(f"Arriendo {actual} gratis", texto)
 
 
 def clase_estatus(texto):
@@ -171,6 +202,8 @@ def main():
             print(f'{tabla["titulo"]}: no llegaron promociones, no se genera imagen.')
             salidas[f"hay_filas{sufijo}"] = "false"
             continue
+        if tabla["meses_arriendo"]:
+            filas = [[e, t, poner_meses_arriendo(p, ahora), v, s] for e, t, p, v, s in filas]
         nombre = f'{tabla["prefijo"]}_{ahora:%Y-%m-%d_%H%M}.png'
         paginas.append((armar_html(tabla["titulo"], filas, fecha_hora), CARPETA_IMG / nombre))
         salidas[f"hay_filas{sufijo}"] = "true"
